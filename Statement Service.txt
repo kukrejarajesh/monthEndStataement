@@ -1,0 +1,11 @@
+Statement Service
+
+What are the requirements for statement service?
+
+I am a customer, I should be able to 
+-- login and view my account balances, 
+-- along with statement for a given period of time, 
+-- since i can ask for longer duration, based on design constraints etc, pls. provide me ability to download in excel/pdf
+
+
+RIght now I am not focusing on authentication service. Or should I, later on..
