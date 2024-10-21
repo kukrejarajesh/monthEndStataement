@@ -8,6 +8,7 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.database.JpaItemWriter;
@@ -28,19 +29,27 @@ public class SpringBatchConfig {
 	private JobBuilder jobBuilder;
 	private StepBuilder stepBuilder;
 	
-//	@Autowired
+	@Autowired
+	private JobRepository jobRepository;
+	@Autowired
 	private StatementRepository statementRepository;
+	
+	 @Autowired
+	 private EntityManagerFactory entityManagerFactory;
+	 
+	 @Autowired
+	 private PlatformTransactionManager  transactionManager;
 	
 	
 	 @Bean
 	 @StepScope
-	 public JpaPagingItemReader<Transaction> jpaPagingItemReader() {
+	 public JpaPagingItemReader<Transaction> itemReader() {
 	       
-		 return JpaPagingItemReaderBuilder<Transaction>()
+		 return new JpaPagingItemReaderBuilder<Transaction>()
 				 .name("transactinReader")
-				 .entityManagerFactory(entityManagerFactory())
+				 .entityManagerFactory(entityManagerFactory)
 				 .queryString("SELECT t FROM Transaction t")
-				 .pageSize(100)
+				 .pageSize(10)
     			 .build();
 		 
 //		 	JpaPagingItemReader<Transaction> reader = new JpaPagingItemReader<>();
@@ -56,11 +65,12 @@ public class SpringBatchConfig {
 		 return new StatementProcessor();
 	 }
 	
-	 public  RepositoryItemWriter<Statement> writer(StatementRepository statementRepository)
+	 public  RepositoryItemWriter<Statement> writer()
 	 {
+		 System.out.println("Inside repository item writer");
 		 RepositoryItemWriter<Statement> writer = new RepositoryItemWriter<>();
 		 writer.setRepository(statementRepository);
-		 writer.setMethodName("saveAll");
+		 writer.setMethodName("save");
 		 	 
 			
 		 return writer; 
@@ -68,19 +78,23 @@ public class SpringBatchConfig {
 	 }
 	 
 	 @Bean
-	 public Step step1(JobRepository jobRepository, 
-				PlatformTransactionManager transactionManager) {
-	        return new StepBuilder("step1", jobRepository)	        		        		
+	 public Step step1() {
+	  
+		 System.out.println("In Step builder");
+		 
+		 return new StepBuilder("step1", jobRepository)	        		        		
 	                .<Transaction, Statement>chunk(10,transactionManager)
-	                .reader(jpaPagingItemReader()) // Assuming you have a reader defined
-	                .processor(StatementProcessor()) // Assuming you have a processor defined
+	                .reader(itemReader()) // Assuming you have a reader defined
+	                .processor(processor()) // Assuming you have a processor defined
 	                .writer(writer()) // Use the HibernateItemWriter here
 	                .build();
 	    }
 	 
+	 @Bean
 	 public Job FirstJob(JobRepository jobRepository) {
+		 System.out.println("running first job");
 		 return new JobBuilder("FirstJob", jobRepository)
-				 .start(step1)
+				 .start(step1())
 				 .build();
 	 }
 	 
